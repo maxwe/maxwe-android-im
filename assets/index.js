@@ -1,5 +1,5 @@
-function onOpen(){
-
+function onOpen(message){
+    alert("okoddddddddddd");
 }
 
 function onMessageReceive(message){

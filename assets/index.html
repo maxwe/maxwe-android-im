@@ -11,20 +11,13 @@
             alert("警告，你输入的是："+a);
         }
 
+        function onOpen(message){
+            alert("github");
+        }
+
         function rfInfo(jsonStr) {
-            var socket = new WebSocket("ws://im.maxwe.org:1121");
-            socket.onmessage = function (event) {
-                messageShow(event.data)
-            }
-            socket.onopen = function (event) {
-                alert("Web Socket opened");
-            };
-            socket.onclose = function (event) {
-                alert("Web Socket closed");
-            };
-            socket.onerror = function (event) {
-                alert("Web Socket error ");
-            }
+
+
 
             alert("oko");
             //document.getElementById("info").innerHTML="从Android客户端传来的作者信息:"+jsonStr.Developer;

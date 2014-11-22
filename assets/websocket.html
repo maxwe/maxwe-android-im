@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <script type="text/javascript">
+        var socket = new WebSocket("ws://im.maxwe.org:1121");
+        socket.onopen = function (event) {
+            window.MAXWE_WEBSOCKET.onOpen();
+        };
+        socket.onclose = function (event) {
+            window.MAXWE_WEBSOCKET.onClose();
+        };
+        socket.onerror = function (event) {
+            window.MAXWE_WEBSOCKET.onError();
+        }
+        socket.onmessage = function (event) {
+            window.MAXWE_WEBSOCKET.onReceiveMessage(event.data);
+        }
+
+        function onOpen(message){
+            alert("open of js");
+        }
+
+        function onMessageSend(message){
+            socket.send(message)
+        }
+
+    </script>
+</head>
+</html>

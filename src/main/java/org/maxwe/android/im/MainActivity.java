@@ -6,8 +6,13 @@ import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.webkit.*;
+import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
+import org.maxwe.json.Json;
+import org.maxwe.json.JsonObject;
 
+import javax.xml.soap.Text;
 import java.awt.*;
 
 /**
@@ -22,13 +27,10 @@ import java.awt.*;
  */
 public class MainActivity extends Activity implements View.OnClickListener{
 
-    private static final String TAG = "MainActivity";
-    WebView webView;
-    Handler handler = new Handler();
-    Button btn;
-    final String jsonStr = "{\"Developer\":\"Harlan\",\"Place\":\"Nanjing\"}";
-
-
+    private final String INTERFACE_NAME = "MAXWE_WEBSOCKET";
+    private WebView webView;
+    private EditText et_main_name;
+    private EditText et_main_message;
     @Override
     protected void onStart() {
         super.onStart();
@@ -38,46 +40,72 @@ public class MainActivity extends Activity implements View.OnClickListener{
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setSupportZoom(false);
-        webView.loadUrl("file:///android_asset/index.html");
+        webView.loadUrl("file:///android_asset/websocket.html");
         webView.setWebChromeClient(new HarlanWebChromeClient());
         webView.setWebViewClient(new HarlanWebViewClient());
-                /*
-                 * 为js提供一个方法，注意该方法一般不写在UI线程中
-                 * addJavascriptInterface(Object obj, String interfaceName)
-                 * obj代表一个java对象，这里我们一般会实现一个自己的类，类里面提供我们要提供给javascript访问的方法
-                 * interfaceName则是访问我们在obj中声明的方法时候所用到的js对象，调用方法为window.interfaceName.方法名()
-                 */
-        webView.addJavascriptInterface(new Object() {
-            @SuppressWarnings("unused")
-            public void adrdMethod() {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Log.d(TAG, "js调用了Android方法");
-                    }
-                });
-            }
-        }, "demo");
+        /*
+         * 为js提供一个方法，注意该方法一般不写在UI线程中
+         * addJavascriptInterface(Object obj, String interfaceName)
+         * obj代表一个java对象，这里我们一般会实现一个自己的类，类里面提供我们要提供给javascript访问的方法
+         * interfaceName则是访问我们在obj中声明的方法时候所用到的js对象，调用方法为window.interfaceName.方法名()
+         */
+        webView.addJavascriptInterface(new DefaultWebSocketCallBack(), this.INTERFACE_NAME);
 
-        webView.addJavascriptInterface(new WebSocketFactory(this.webView),"WebSocketFactory");
-
-
+        this.et_main_name = (EditText) this.findViewById(R.id.et_main_name);
+        this.et_main_message = (EditText) this.findViewById(R.id.et_main_message);
     }
 
     @Override
     public void onClick(View v) {
         switch(v.getId()){
-            case R.id.open :
-                webView.loadUrl("javascript:rfInfo(" + jsonStr + ")");
+            case R.id.bt_main_sender :
+                String name = this.et_main_name.getText().toString();
+                String message = this.et_main_message.getText().toString();
+                if(name == null || name.trim().equals("")){
+                    Toast.makeText(this,"请输入姓名",Toast.LENGTH_LONG).show();
+                }else if(message == null || message.trim().equals("")){
+                    Toast.makeText(this,"请输入信息",Toast.LENGTH_LONG).show();
+                }else{
+                    String sendMessage = Json.createJsonObject().set("name", name).set("message", message).toJsonString();
+
+                    webView.loadUrl("javascript:onMessageSend(" + sendMessage + ")");
+                }
                 break;
-            case R.id.close :
-                break;
+        }
+    }
+    interface OnWebSocketCallback{
+        public void onOpen();
+        public void onError();
+        public void onClose();
+        public void onReceiveMessage(String message);
+    }
+    class DefaultWebSocketCallBack implements OnWebSocketCallback{
+
+        @Override
+        public void onOpen() {
+            Toast.makeText(MainActivity.this,"OPEN",Toast.LENGTH_LONG).show();
+            System.out.println("==================open=======================");
+        }
+
+        @Override
+        public void onError() {
+            System.out.println("==================error=======================");
+        }
+
+        @Override
+        public void onClose() {
+            System.out.println("==================close=======================");
+        }
+
+        @Override
+        public void onReceiveMessage(String message) {
+            Toast.makeText(MainActivity.this,message,1).show();
+            System.out.println("==================" + message.toString() + "=======================");
         }
     }
 
     /**
      * webChromeClient主要是将javascript中相应的方法翻译成android本地方法
-     * <p/>
      * 例如：我们重写了onJsAlert方法，那么当页面中需要弹出alert窗口时，便
      * 会执行我们的代码，按照我们的Toast的形式提示用户。
      */
@@ -90,12 +118,11 @@ public class MainActivity extends Activity implements View.OnClickListener{
         @Override
         public boolean onJsAlert(WebView view, String url, String message, JsResult result) {
             Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
-            Log.d(TAG, "弹出了提示框");
-                        /*此处代码非常重要，若没有，android就不能与js继续进行交互了，
-                         * 且第一次交互后，webview不再展示出来。
-                         * result：A JsResult to confirm that the user hit enter.
-                         * 我的理解是，confirm代表着此次交互执行完毕。只有执行完毕了，才可以进行下一次交互。
-                         */
+            /*此处代码非常重要，若没有，android就不能与js继续进行交互了，
+             * 且第一次交互后，webview不再展示出来。
+             * result：A JsResult to confirm that the user hit enter.
+             * 我的理解是，confirm代表着此次交互执行完毕。只有执行完毕了，才可以进行下一次交互。
+             */
             result.confirm();
             return true;
         }
@@ -106,7 +133,6 @@ public class MainActivity extends Activity implements View.OnClickListener{
          */
         @Override
         public boolean onJsConfirm(WebView view, String url,String message, JsResult result) {
-            Log.d(TAG, "弹出了确认框");
             result.confirm();
             return true;
         }
@@ -117,7 +143,6 @@ public class MainActivity extends Activity implements View.OnClickListener{
          */
         @Override
         public boolean onJsPrompt(WebView view, String url, String message, String defaultValue,  JsPromptResult result) {
-            Log.d(TAG, "弹出了输入框");
             result.confirm();
             return true;
         }
@@ -128,7 +153,6 @@ public class MainActivity extends Activity implements View.OnClickListener{
          */
         @Override
         public boolean onJsBeforeUnload(WebView view, String url,  String message, JsResult result) {
-            Log.d(TAG, "弹出了离开确认框");
             result.confirm();
             return true;
         }
