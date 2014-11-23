@@ -18,21 +18,17 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"/>
     </LinearLayout>
-    <ScrollView
+    <ListView
+            android:id="@+id/lv_main_messages"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1">
-        <TextView
-                android:id="@+id/tv_main_message"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"/>
-    </ScrollView>
+    </ListView>
 
     <EditText
             android:id="@+id/et_main_message"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"/>
+            android:layout_height="wrap_content"/>
 
     <Button
             android:id="@+id/bt_main_sender"

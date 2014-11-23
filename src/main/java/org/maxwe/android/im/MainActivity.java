@@ -2,18 +2,18 @@ package org.maxwe.android.im;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.os.Handler;
-import android.util.Log;
+import android.os.Looper;
+import android.os.Message;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.webkit.*;
-import android.widget.EditText;
-import android.widget.TextView;
-import android.widget.Toast;
+import android.widget.*;
 import org.maxwe.json.Json;
+import org.maxwe.json.JsonArray;
 import org.maxwe.json.JsonObject;
-
-import javax.xml.soap.Text;
-import java.awt.*;
 
 /**
  * @Description: [Description]
@@ -31,6 +31,9 @@ public class MainActivity extends Activity implements View.OnClickListener{
     private WebView webView;
     private EditText et_main_name;
     private EditText et_main_message;
+    private ListView lv_main_messages;
+    private MessagesAdapter messagesAdapter;
+    private JsonArray messages = Json.createJsonArray();
     @Override
     protected void onStart() {
         super.onStart();
@@ -53,6 +56,8 @@ public class MainActivity extends Activity implements View.OnClickListener{
 
         this.et_main_name = (EditText) this.findViewById(R.id.et_main_name);
         this.et_main_message = (EditText) this.findViewById(R.id.et_main_message);
+        this.lv_main_messages = (ListView) this.findViewById(R.id.lv_main_messages);
+        this.lv_main_messages.setAdapter(this.messagesAdapter = new MessagesAdapter());
     }
 
     @Override
@@ -67,12 +72,53 @@ public class MainActivity extends Activity implements View.OnClickListener{
                     Toast.makeText(this,"请输入信息",Toast.LENGTH_LONG).show();
                 }else{
                     String sendMessage = Json.createJsonObject().set("name", name).set("message", message).toJsonString();
-
-                    webView.loadUrl("javascript:onMessageSend(" + sendMessage + ")");
+                    webView.loadUrl("javascript:onMessageSend('" + sendMessage + "')");
+                    this.et_main_message.setText("");
                 }
                 break;
         }
     }
+
+    class MessagesAdapter extends BaseAdapter{
+        @Override
+        public int getCount() {
+            return messages.getLenght();
+        }
+
+        @Override
+        public Object getItem(int i) {
+            return messages.get(i);
+        }
+
+        @Override
+        public long getItemId(int i) {
+            return i;
+        }
+
+        @Override
+        public View getView(int i, View view, ViewGroup viewGroup) {
+            JsonObject message = messages.get(i);
+            TextView messageView = new TextView(MainActivity.this);
+
+            if(message.getString("name").equals(et_main_name.getText().toString())){
+                messageView.setGravity(Gravity.RIGHT);
+                messageView.setText(message.getString("message"));
+            }else{
+                messageView.setGravity(Gravity.LEFT);
+                messageView.setText(message.getString("name") + " say:" + message.getString("message"));
+            }
+            return messageView;
+        }
+    }
+
+    private Handler handler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            messagesAdapter.notifyDataSetChanged();
+        }
+    };
+
     interface OnWebSocketCallback{
         public void onOpen();
         public void onError();
@@ -89,17 +135,20 @@ public class MainActivity extends Activity implements View.OnClickListener{
 
         @Override
         public void onError() {
+            Toast.makeText(MainActivity.this,"Error",Toast.LENGTH_LONG).show();
             System.out.println("==================error=======================");
         }
 
         @Override
         public void onClose() {
+            Toast.makeText(MainActivity.this,"Close",Toast.LENGTH_LONG).show();
             System.out.println("==================close=======================");
         }
 
         @Override
         public void onReceiveMessage(String message) {
-            Toast.makeText(MainActivity.this,message,1).show();
+            messages.push(Json.parse(message));
+            handler.sendEmptyMessage(0);
             System.out.println("==================" + message.toString() + "=======================");
         }
     }
