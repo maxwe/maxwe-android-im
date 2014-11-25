@@ -22,6 +22,7 @@
             android:id="@+id/lv_main_messages"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
+            android:transcriptMode="alwaysScroll"
             android:layout_weight="1">
     </ListView>
 
