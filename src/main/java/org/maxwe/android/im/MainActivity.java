@@ -2,7 +2,6 @@ package org.maxwe.android.im;
 
 import android.app.Activity;
 import android.os.Handler;
-import android.os.Looper;
 import android.os.Message;
 import android.view.Gravity;
 import android.view.View;
